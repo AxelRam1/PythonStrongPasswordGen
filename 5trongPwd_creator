@@ -1,0 +1,116 @@
+# "5trongPwd_creator" by Axel Ramirez
+
+# CODE #
+
+
+#Import modules
+
+import string, random, click, csv, hashlib, binascii, os
+from datetime import datetime
+
+
+#User Input
+
+#Ask the user for input; number of characters in password, or password length.
+#Confirm there is a minimum of 7 characters, otherwise ask the user to set a different number as input for the number of characters they want the password to be made of.
+num = click.prompt("How many characters long do you need the password to be?\nPlease enter a number equal or greater than 7 ", type=click.IntRange(min=7))
+#confirmation that the authorised minimum number of characters for the password has been accepted.
+print(f"Let's generate a password {num} characters long.")
+
+#Ensure the character will contain at least one of the following types of characters: lowercase (lo), uppercase (up), digit (dgt) and a punctuation character (pun).
+#define the list containing the password characters:
+lo = string.ascii_lowercase 
+up = string.ascii_uppercase 
+dgt = string.digits 
+pun = string.punctuation
+
+
+#Password creation
+
+#Extend to add the list with each of the type of characters (lo, up, dgt and pun) needed for creating the password: 
+pwd = []
+pwd.extend(list(lo))
+pwd.extend(list(up))
+pwd.extend(list(dgt))
+pwd.extend(list(pun))
+
+
+#Random shuffle:
+
+#Add a shuffle method to ensure the password is truly ‘randomly’ generated. 
+random.shuffle(pwd)
+
+
+#Password output
+
+#print the generated password for the user.
+print("This is the strong password that you can use:")
+pwd1 = "".join(random.sample(pwd,num))
+
+# print("".join(random.sample(pwd,num)))
+print(pwd1)
+
+
+#Salting and hashing of the password
+
+#Create the salt and the hash of the password before storing in csv file:
+def hash_password(pwd1):
+  salt = hashlib.sha256(os.urandom(60)).hexdigest().encode("ascii")
+  # print(salt)
+  pwdhash1 = hashlib.pbkdf2_hmac("sha512", pwd1.encode(
+    "utf-8"), salt, 100000)
+  # print(pwdhash1)
+  pwdhash1 = binascii.hexlify(pwdhash1)
+  return (salt + pwdhash1).decode("ascii")
+  # print(pwdhash)
+
+hash_password(pwd1)
+
+#Assign a variable name to the function so that its return (output) can be used as variable to be written in the csv file.
+pwdhash = hash_password(pwd1)
+
+
+#Timestamp
+
+# note:datetime.datetime combines date and time attributes into a datetime object
+# datetime.datetime(year, month, day, hour, minute, second, microsecond, tzinfo)
+# Use datetime.datetime.now() to get the current date and time
+
+dt1 = datetime.now()
+# print(dt1)
+
+
+#Storage in csv 
+
+#Define a function to get the number of rows in the csv file that exist or in other words, as a counter for how many passwords have been generated.
+def get_length(file_path):
+  with open("5trong_pwd.csv", "r") as csvfile:
+    reader = csv.reader(csvfile)
+    reader_list = list(reader)
+    # print(reader_list)
+    return len(reader_list)
+
+# Define function for appending data to csv file in a dictionnary form:
+def append_data(file_path, datetime, password):
+  fieldnames = ["ID","datetime","password"]
+  next_id = get_length(file_path)
+  with open(file_path, "a") as csvfile:
+    writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+    writer.writerow({
+      "ID": next_id,
+      "datetime": dt1,
+      "password": hash_password(pwd1),
+      })
+
+append_data("5trong_pwd.csv", dt1, pwdhash)
+
+
+#Create a csv file
+
+#Create a csv file where to store the hashed passwords:
+with open("5trong_pwd.csv", "r+", newline="") as f:
+  thewriter = csv.writer(f)
+
+  thewriter.writerow(["ID", "datetime", "hash_value"])
+
+#END
